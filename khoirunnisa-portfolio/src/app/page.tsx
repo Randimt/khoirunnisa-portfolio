@@ -238,6 +238,7 @@ const stagger = {
 };
 
 export default function Home() {
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
   const [activeSection, setActiveSection] = useState("about");
 
   useEffect(() => {
@@ -263,62 +264,52 @@ export default function Home() {
     };
   }, []);
 
-  // Lightweight cursor glow — RAF-throttled, GPU-only transform
-  useEffect(() => {
-    const glow = document.getElementById("cursor-glow");
-    if (!glow) return;
-    let raf = 0;
-    const onMove = (e: MouseEvent) => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
-        raf = 0;
-      });
-    };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
-
   return (
     <main
+      onMouseMove={(event) => setMouse({ x: event.clientX, y: event.clientY })}
+      style={
+        {
+          "--mouse-x": `${mouse.x}px`,
+          "--mouse-y": `${mouse.y}px`,
+        } as React.CSSProperties
+      }
       className="relative min-h-screen overflow-hidden bg-[#07111F] text-[#E2E8F0] selection:bg-[#1D4ED8] selection:text-white"
     >
       <Background />
-
-      {/* Lightweight cursor glow */}
-      <div
-        id="cursor-glow"
-        aria-hidden
-        className="pointer-events-none fixed left-0 top-0 z-10 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-60 [will-change:transform]"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(56,189,248,0.10) 0%, rgba(29,78,216,0.05) 35%, transparent 70%)",
-        }}
-      />
+      <div className="pointer-events-none fixed inset-0 z-10 bg-[radial-gradient(520px_circle_at_var(--mouse-x)_var(--mouse-y),rgba(56,189,248,0.16),rgba(29,78,216,0.08)_32%,transparent_62%)]" />
 
       <section className="relative z-20 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-5 sm:px-8 lg:px-10">
-        <nav className="sticky top-5 z-50 mx-auto flex w-full max-w-6xl items-center justify-between rounded-2xl border border-white/10 bg-[#07111F]/80 px-4 py-3 backdrop-blur-md">
+        <HeroAtmosphere />
+        <nav className="sticky top-5 z-50 mx-auto flex w-full max-w-6xl items-center justify-between rounded-2xl border border-white/10 bg-[#07111F]/42 px-4 py-3 shadow-[0_0_42px_rgba(56,189,248,0.14)] backdrop-blur-2xl transition duration-500">
           <a href="#home" className="flex items-center gap-3 font-semibold tracking-tight" aria-label="Scroll to top">
-            <span className="grid h-9 w-9 place-items-center rounded-xl border border-[#38BDF8]/30 bg-[#38BDF8]/10 text-sm font-black text-[#38BDF8]">
+            <span className="grid h-9 w-9 place-items-center rounded-2xl border border-[#38BDF8]/35 bg-[#38BDF8]/12 text-sm font-black text-[#38BDF8] shadow-[0_0_28px_rgba(56,189,248,0.24)]">
               K
             </span>
-            <span className="text-sm uppercase tracking-[0.18em] text-[#E2E8F0]">Khoirunnisa</span>
+            <span className="font-futuristic text-sm uppercase tracking-[0.18em] text-[#E2E8F0]">Khoirunnisa</span>
           </a>
           <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-1 rounded-xl border border-white/10 bg-[#0F172A]/40 p-1 text-sm md:flex">
+            <div className="hidden items-center gap-1 rounded-2xl border border-white/10 bg-[#0F172A]/42 p-1 text-sm text-[#E2E8F0]/62 backdrop-blur-xl md:flex">
               {navLinks.map((link) => {
                 const isActive = activeSection === link.id;
+
                 return (
                   <a
                     key={link.id}
                     href={link.href}
-                    className={`rounded-lg px-3 py-1.5 transition-colors hover:text-[#38BDF8] ${
-                      isActive ? "bg-[#38BDF8]/10 text-[#38BDF8]" : "text-[#E2E8F0]/60"
+                    className={`relative rounded-xl px-3 py-2 transition duration-300 hover:text-[#38BDF8] ${
+                      isActive ? "text-[#38BDF8]" : "text-[#E2E8F0]/62"
                     }`}
                     aria-label={`Scroll to ${link.label} section`}
                     aria-current={isActive ? "page" : undefined}
                   >
-                    {link.label}
+                    {isActive && (
+                      <motion.span
+                        layoutId="active-nav-indicator"
+                        className="absolute inset-0 rounded-xl border border-[#38BDF8]/25 bg-[#38BDF8]/10 shadow-[0_0_20px_rgba(56,189,248,0.18)]"
+                        transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                      />
+                    )}
+                    <span className="relative z-10">{link.label}</span>
                   </a>
                 );
               })}
@@ -329,105 +320,149 @@ export default function Home() {
 
         <div
           id="home"
-          className="grid flex-1 items-center gap-12 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:py-24"
+          className="grid flex-1 items-center gap-12 py-20 lg:grid-cols-[1.08fr_0.92fr] lg:py-24"
         >
-          {/* Left: Hero text */}
-          <div className="space-y-8">
-            <Badge className="rounded-full border-[#38BDF8]/20 bg-[#38BDF8]/8 px-4 py-1.5 text-[#60A5FA] hover:bg-[#38BDF8]/15">
-              <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Biomedical Engineering Graduate
-            </Badge>
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={stagger}
+            className="space-y-8"
+          >
+            <motion.div variants={fadeUp} transition={{ duration: 0.6 }}>
+              <Badge className="rounded-full border-white/10 bg-[#1D4ED8]/55 dark:bg-[#60A5FA]/22 px-4 py-1.5 text-[#60A5FA] hover:bg-[#1D4ED8]/70">
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Biomedical Engineering Graduate
+              </Badge>
+            </motion.div>
 
-            <div className="space-y-5">
-              <h1 className="font-futuristic text-5xl font-semibold tracking-[-0.045em] text-[#E2E8F0] sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+            <motion.div variants={fadeUp} transition={{ duration: 0.6 }} className="space-y-5">
+              <h1 className="max-w-5xl font-futuristic text-5xl font-semibold tracking-[-0.055em] text-[#E2E8F0] drop-shadow-[0_0_28px_rgba(56,189,248,0.32)] sm:text-6xl md:text-7xl lg:text-8xl">
                 <span className="bg-gradient-to-r from-[#E2E8F0] via-[#38BDF8] to-[#60A5FA] bg-clip-text text-transparent">
                   Khoirunnisa
                 </span>
               </h1>
               <div className="space-y-3">
-                <p className="text-xl font-medium text-[#60A5FA] md:text-2xl">
+                <p className="font-futuristic text-xl font-medium text-[#60A5FA] drop-shadow-[0_0_18px_rgba(96,165,250,0.35)] md:text-2xl">
                   Biomedical Engineering Graduate
                 </p>
-                <p className="max-w-2xl text-base leading-7 text-[#E2E8F0]/65 sm:text-lg">
+                <p className="max-w-2xl text-base leading-8 text-[#E2E8F0]/68 sm:text-lg md:text-xl">
                   Focused on Intelligent Healthcare Systems, Biomedical
                   Instrumentation, IoT Technology, and Signal Processing.
                 </p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.6 }}
+              className="flex flex-col gap-3 sm:flex-row"
+            >
               <a
                 href="#projects"
-                className="inline-flex h-12 items-center justify-center rounded-lg bg-[#38BDF8] px-6 text-sm font-semibold text-[#07111F] transition-all hover:-translate-y-0.5 hover:bg-[#60A5FA]"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-[#38BDF8] px-6 text-sm font-semibold text-white shadow-lg shadow-[#38BDF8]/25 transition hover:-translate-y-0.5 hover:bg-[#60A5FA]"
               >
-                View Projects <ArrowUpRight className="ml-1.5 h-4 w-4" />
+                View Portfolio <ArrowUpRight className="ml-2 h-4 w-4" />
               </a>
               <a
                 href="#contact"
-                className="inline-flex h-12 items-center justify-center rounded-lg border border-white/10 bg-[#0F172A]/60 px-6 text-sm font-semibold text-[#E2E8F0] transition-all hover:-translate-y-0.5 hover:border-[#38BDF8]/40 hover:bg-[#0F172A]/80"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-[#0F172A]/65 dark:bg-[#0F172A]/10 px-6 text-sm font-semibold text-[#60A5FA] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-[#1D4ED8]/50 dark:bg-[#60A5FA]/22"
               >
                 Download CV
               </a>
-            </div>
+            </motion.div>
 
-            {/* Stats — bordered tabular, no animations */}
-            <div className="grid max-w-xl grid-cols-3 gap-0 border-t border-white/10 pt-6">
+            <motion.div variants={fadeUp} transition={{ duration: 0.6 }}>
+              <HeroTelemetry />
+            </motion.div>
+
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.6 }}
+              className="grid max-w-2xl grid-cols-3 gap-3"
+            >
               {stats.map((stat) => (
-                <div key={stat.label} className="border-r border-white/10 px-4 py-2 last:border-r-0 first:pl-0">
-                  <div className="text-xs uppercase tracking-[0.15em] text-[#E2E8F0]/45">{stat.label}</div>
-                  <div className="mt-1.5 font-futuristic text-2xl font-semibold text-[#38BDF8] md:text-3xl">{stat.value}</div>
-                </div>
+                <Stat key={stat.label} {...stat} />
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
-          {/* Right: Profile card — clean, static */}
-          <div className="relative">
-            <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#0F172A]/40 p-5 backdrop-blur-sm transition-colors hover:border-[#38BDF8]/30">
-              <div className="text-xs uppercase tracking-[0.15em] text-[#E2E8F0]/45">Profile</div>
-              <div className="mt-3 overflow-hidden rounded-xl border border-white/10">
-                <div className="relative aspect-[423/591] w-full bg-[#07111F]">
-                  <Image
-                    src="/images/khoirunnisa-profile.jpg"
-                    alt="Khoirunnisa profile portrait"
-                    fill
-                    priority
-                    sizes="(max-width: 768px) 80vw, 400px"
-                    className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#07111F]/40 via-transparent to-transparent" />
+          <motion.div
+            initial={{ opacity: 0, y: 22, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.75, delay: 0.15 }}
+            className="relative"
+          >
+            <div className="absolute -inset-6 rounded-[2rem] bg-[#38BDF8]/15 blur-3xl" />
+            <Card className="relative overflow-hidden rounded-2xl border-[#1D4ED8]/80 dark:border-white/10 bg-[#0F172A]/60 dark:bg-[#0F172A]/8 text-[#E2E8F0] dark:text-[#E2E8F0] shadow-2xl shadow-[#38BDF8]/10 backdrop-blur-2xl">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#38BDF8]/50 to-transparent" />
+              <CardHeader className="space-y-4">
+                <CardDescription className="text-[#E2E8F0] dark:text-[#E2E8F0]/55">Holographic Profile Scan</CardDescription>
+                <div className="overflow-hidden holographic-surface rounded-2xl border border-white/10 bg-gradient-to-br from-[#1D4ED8]/35 via-[#0F172A]/80 to-[#07111F] p-4 shadow-inner shadow-[#38BDF8]/10">
+                  <div className="relative grid aspect-[4/5] place-items-center overflow-hidden rounded-2xl border border-white/10 bg-[#0F172A]/70 text-center backdrop-blur-xl">
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(96,165,250,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(96,165,250,0.08)_1px,transparent_1px)] bg-[size:26px_26px]" />
+                    <motion.div
+                      animate={{ rotate: [0, 360] }}
+                      transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+                      className="absolute h-56 w-56 rounded-full border border-[#38BDF8]/20 shadow-[0_0_55px_rgba(56,189,248,0.15)]"
+                    />
+                    <motion.div
+                      animate={{ scale: [1, 1.08, 1], opacity: [0.42, 0.72, 0.42] }}
+                      transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut" }}
+                      className="absolute h-32 w-32 rounded-full border border-[#60A5FA]/30"
+                    />
+                    <div className="relative w-full max-w-[18rem] px-6 pb-14 pt-8">
+                      <div className="relative mx-auto aspect-[423/591] w-full overflow-hidden rounded-[1.75rem] border border-[#38BDF8]/35 bg-[#07111F] shadow-[0_0_55px_rgba(56,189,248,0.24)]">
+                        <Image
+                          src="/images/khoirunnisa-profile.jpg"
+                          alt="Khoirunnisa profile portrait"
+                          fill
+                          priority
+                          sizes="(max-width: 768px) 70vw, 320px"
+                          className="object-cover object-center opacity-90 saturate-[0.95] contrast-[1.04] transition duration-700 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#07111F]/55 via-transparent to-[#38BDF8]/10" />
+                        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(56,189,248,0.08)_50%,transparent_100%)] bg-[size:100%_18px] opacity-40" />
+                      </div>
+                      <p className="mt-5 text-sm font-medium uppercase tracking-[0.24em] text-[#38BDF8]">Holographic Bio Scan</p>
+                      <p className="mt-1 text-xs text-[#E2E8F0]/45">Profile image integrated</p>
+                    </div>
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <MiniECG />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="mt-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-futuristic text-lg font-semibold tracking-tight">AI Biomedical Interface</span>
-                  <Badge className="rounded-full border-[#38BDF8]/20 bg-[#38BDF8]/10 text-[#60A5FA] hover:bg-[#38BDF8]/15">
+                <div className="flex items-end justify-between gap-4">
+                  <CardTitle className="font-futuristic text-3xl font-semibold tracking-tight">
+                    AI Biomedical Interface
+                  </CardTitle>
+                  <Badge className="rounded-full border-white/10 bg-[#1D4ED8]/50 dark:bg-[#60A5FA]/22 text-[#60A5FA] hover:bg-[#1D4ED8]/60 dark:bg-[#60A5FA]/28">
                     Telkom University
                   </Badge>
                 </div>
-
-                <div className="grid gap-2 pt-2">
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <ECGWaveform />
+                <div className="grid gap-3">
                   {focusAreas.map((area) => (
                     <InfoRow key={area.title} {...area} />
                   ))}
                 </div>
-
-                <div className="flex flex-wrap gap-1.5 border-t border-white/10 pt-4">
+                <div className="h-px bg-[#1D4ED8]/80" />
+                <div className="flex flex-wrap gap-2">
                   {expertise.slice(0, 6).map((skill) => (
                     <Badge
                       key={skill}
                       variant="secondary"
-                      className="rounded-full border-[#38BDF8]/15 bg-[#0F172A]/70 text-[11px] text-[#E2E8F0]/70 hover:bg-[#0F172A]"
+                      className="rounded-full border-[#38BDF8]/15 bg-[#0F172A]/70 dark:bg-[#0F172A]/10 text-[#E2E8F0] dark:text-[#E2E8F0]/70 hover:bg-[#1D4ED8]/60 dark:bg-[#60A5FA]/28"
                     >
                       {skill}
                     </Badge>
                   ))}
                 </div>
-              </div>
-            </div>
-          </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </section>
-
 
       <section id="about" className="relative z-20 mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10">
         <motion.div
